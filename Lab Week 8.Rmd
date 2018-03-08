@@ -1,0 +1,40 @@
+---
+title: "Lab Week 8"
+author: "Sandy Carter"
+date: "3/8/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Point Pattern Analysis Oil Spill Texas
+
+### Load packages
+```{r, message = FALSE}
+library(tidyverse)
+library(sf)
+library(tmap)
+library(leaflet)
+library(spatstat)
+library(maptools)
+```
+
+### Make column graph of Texas Oil Spills
+```{r, message=FALSE}
+oil_spills <- read_csv("oil_spills.csv")
+
+df <- oil_spills %>% 
+  filter(`Accident State` == "TX" & `Accident Year` < 2017) %>% 
+  group_by(`Accident Year`) %>%  # Create groups by different years so we can find net oil loss by year
+  summarise(Loss = sum(`Net Loss (Barrels)`))
+
+colnames(df) <- c("Year", "Loss")
+
+ggplot(df, aes(x = Year, y = Loss)) +
+  geom_col()
+# Loss is in barrels. This is about 1/2 as much as Exxon Valdez. (but land to marine is apples/oranges)
+```
+
+
