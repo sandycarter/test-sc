@@ -54,3 +54,38 @@ leaflet(oil_sf) %>%
 
 ```
 
+### Make tmap of oil spills with Texas State shape file (to prep for spatial point pattern analysis)
+```{r}
+states <- st_read(dsn = ".", layer = "states")
+
+tex_border <- states %>% 
+  filter(STATE_NAME == "Texas") %>% # select texas
+  st_transform(4326) # Transform coordinate reference system (need polygons to align correctly); using transform b/c it already had one--not setting it, but changing it
+
+#plot(tex_border)
+
+tm_shape(tex_border) +
+  tm_polygons() +
+  tm_shape(oil_sf) +
+  tm_dots(size = 0.3)
+```
+  
+**Are these spatially random or not? Does this point pattern follow CRS? (Doing this on oil spills isn't the best in that these are dependent on oil locations, but we're going to use it as an example here)**
+
+### Convert the data to spatial points pattern (combination of point data and the bounding window)
+```{r}
+# identify points
+spill_sp <- as(oil_sf, "Spatial") # convert back from simple features to dataframe
+spill_ppp <- as(spill_sp, "ppp") #Change class to ppp (point pattern analysis)
+
+# identify bounding window
+tx_sp <- as(tex_border, "Spatial")
+tx_owin <- as(tx_sp, "owin") #Take texas spatial and set it as window for ppp
+
+# Put points and bounding window together
+all_ppp <- ppp(spill_ppp$x, spill_ppp$y, window = tx_owin) #x and y are corresponding lat and long. R omits points that don't align within the polygon
+
+```
+
+
+
