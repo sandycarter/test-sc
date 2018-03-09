@@ -87,5 +87,56 @@ all_ppp <- ppp(spill_ppp$x, spill_ppp$y, window = tx_owin) #x and y are correspo
 
 ```
 
+### Density plot
+```{r}
+plot(density(all_ppp, sigma=0.4)) # Caution: density plots are really easy to make, but they can change stories based on sigma values. Sigma = bandwidth 
+```
+
+### Quadrat test for spatial evenness
+Are oil spills evenly distributed throughout the state?
+
+```{r}
+oil_qt <- quadrat.test(all_ppp, nx = 5, ny = 5) # add ppp, set quadrat sizes--the fact you can set these is why it's dangerous. 5 regions horizontally (nx), 5 regions vertically(5)--breaks up state of texas into 5 regions in each way. Counts events in each of those quadrats and tests that with chi-square
+oil_qt
+# Result: The data are not spatially evenly distributed
+    # Small p-value. look at the state, it doesn't really look like CSR (see strong clusterings in some areas). This tests null hypothesis of CSR. Really high chi-square and small p-value = hard reject null hypothesis. retain alternative hypothesis that it's not CSR, not evenly distributed. 
+
+plot(all_ppp)
+plot(oil_qt, add=TRUE,cex = 0.4) #upper right = expected; upper left = actual count; bottom = standardized measure of how different expected and actual are
+```
+
+### Nearest Neighbor Analysis
+If clustered, nearest neighbor will be closer than under CSR.  
+Two ways to evaluate:  
+(1) Consider single closest nearest neighbor, calculate g fcn (proportion of point pairs within distance r).    
+(2) Consider how close points are overall, calculate L and K functions (proportion of point density within bubble around each point as bubble gets larger).  
+
+#### G function for nearest neighbor analysis
+
+```{r}
+r <- seq(0,1, by = 0.01) #Make sequence of values for r (this will be a different set for each dataset--need a span that considers span of distance that covers all of them)
+
+oil_gfun <- envelope(all_ppp, fun = Gest, r = r, nsim = 100) # Simulate CSR data to compare the data to, using the r window and # points. Use a poisson distribution. 
+#outcome df: r, observation for each of those ranges (# point pairs--actual data), theoretical = theoretical values based on CSR, low and high confidence intervals) 
+
+ggplot(oil_gfun, aes(x=r, y = obs)) +
+  geom_line(color = "black") +
+  geom_line(aes(x=r, y = theo), color = "red")
+# Shows us that our observed data has a higher proportion of point pairs with nearest neighbors at shorter distances compared to CSR data (i.e., more clustering)
+```
+
+#### L function for nearest neighbor analysis (standardized version of Ripley's K function)
+```{r}
+r2 <- seq(0,3, by = 0.5) #chose large increment to avoid having the simulation take 10 min to run
+
+oil_lfun <- envelope(all_ppp, fun = Lest, r = r2, nsim=20, global = TRUE)
+
+ggplot(oil_lfun, aes(x = r2, y = obs)) +
+  geom_line(color = "black") +
+  geom_line(aes(x = r2, y = theo), color = "blue")
+# takeaway similar as G: higher densities of neighbors that exist at small distances than CSR
+```
+Recap:
+look at map (doesn't seem CSR); look at quadrat map (not even); look at g and l fcn (greater clustering)
 
 
